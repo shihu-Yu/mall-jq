@@ -4,17 +4,21 @@
             this.$cartCount = $('.cart-count')
             this.$cartBox = $('.cart-box')
             this.$cartContent = $('.cart-content')
+
+            this.$categories  = $('.categories')
+
+            this.$parentCategories = $('.parent-categories')
+            this.$childCategories = $('.child-categories')
+            
             this.cartTimer = null
+            this.categoriesTimer = null
             this.handleCart()
             this.handleSerach()
-            /*
-            this.searchBtn   = d.querySelector('.btn-search')
-            this.searchInput = d.querySelector('.search-input')
-            this.searchLayer  = d.querySelector('.search-layer')
-            this.categories  = d.querySelector('.categories')
+            
+            this.handleCategories()
+            
 
-            this.parentCategories = d.querySelector('.parent-categories')
-            this.childCategories = d.querySelector('.child-categories')
+            /*
             this.hotProductList = d.querySelector('.hot .product-list')
             this.floorContainer = d.querySelector('.floor .container')
             this.elevator = d.querySelector('#elevator')
@@ -32,7 +36,7 @@
             
             
            
-            this.handleCategories()
+           
             this.handleCarousel()
             this.handlehotProductList()
             this.handleFloor()
@@ -212,6 +216,26 @@
             this.getParentCategoriesData()
 
             //利用事件代理触发
+            this.$categories
+            .on('mouseover',function(){
+                var $elem = $(this)
+                if(_this.categoriesTimer){
+                    clearTimeout(_this.categoriesTimer)
+                }
+                $elem.addClass('active').siblings().removeClass('active')
+                _this.categoriesTimer = setTimeout(function(){
+                    _this.$childCategories.show()
+                    var pid = $elem.data('id')
+                })
+          
+            })
+            .on('mouseleave',function(){
+                if(_this.categoriesTimer){
+                    clearTimeout(_this.categoriesTimer)
+                }
+                _this.$childCategories.hide().removeClass('active')
+            })
+            /*
             this.categories.addEventListener('mouseover',function(ev){
                     if(_this.categoriesTimer){
                         clearTimeout(_this.categoriesTimer)
@@ -232,6 +256,7 @@
                     },100)
               
             },false)
+            
             this.categories.addEventListener('mouseleave',function(){
                 if(_this.categoriesTimer){
                     clearTimeout(_this.categoriesTimer)
@@ -240,7 +265,9 @@
                 _this.childCategories.innerHTML = ''
                 _this.parentCategoriesItem[_this.lastActiveIndex].className = 'parent-categories-item'
             })
+            */
         },
+        
         getParentCategoriesData:function(){
             
             var _this = this
@@ -255,7 +282,7 @@
         },
         getChildCategoriesData:function(pid){
             var _this = this
-            this.childCategories.innerHTML = '<div class="loader"></div>'
+            this.$childCategories.html('<div class="loader"></div>')
             utils.ajax({
                 url:'/categories/childArrayCategories',
                 data:{
@@ -277,9 +304,9 @@
                     html += '<li class="parent-categories-item"  data-id="'+list[i]._id+'" data-index="'+i+'">'+list[i].name+'</li>'
                 }
                 html += '</ul>'
-                this.parentCategories.innerHTML = html
+                this.$parentCategories.html(html)
             }
-           this.parentCategoriesItem = d.querySelectorAll('.parent-categories-item') 
+           this.$parentCategoriesItem = $('.parent-categories-item') 
         },
         renderChildCategories:function(list){
             var len = list.length
@@ -294,7 +321,7 @@
                             </li>`
                 }
                 html += '</ul>'
-                this.childCategories.innerHTML = html
+                this.$childCategories.html(html)
             }         
         },
         handleCarousel:function(){

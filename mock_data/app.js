@@ -54,6 +54,41 @@ app.get('/products/search', function (req, res) {
         ]
     }))
 })
+app.get('/categories/arrayCategories', function (req, res) {
+    res.json(Mock.mock({
+        "code": 0,
+        "data|10":[
+            {
+                "level": 1,
+                "isShow": "1",
+                "isFloor": "0",
+                "order": 0,
+                "_id": "@string('lower',24)",
+                "name": "@cword(4)",
+                "mobileName": "@cword(4)",
+                "icon": "@image('200x200',@color())"
+            }
+        ]
+    }))
+})
+
+app.get('/categories/childArrayCategories', function (req, res) {
+    res.json(Mock.mock({
+        "code": 0,
+        "data|1-15": [
+            {
+                "level": 2,
+                "isShow": "1",
+                "isFloor": "0",
+                "order": 0,
+                "_id": "@string('lower',24)",
+                "name": "@cword(4)",
+                "mobileName": "@cword(4)",
+                "icon": "@image('200x200',@color())"
+            }
+        ]
+    }))
+})
 app.listen('3000',function(){
     console.log('server is running on http://127.0.0.1:3000')
 })
