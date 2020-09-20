@@ -89,6 +89,44 @@ app.get('/categories/childArrayCategories', function (req, res) {
         ]
     }))
 })
+
+app.get('/ads/positionAds',function(req,res){
+    res.json(Mock.mock({
+        "code": 0,
+        "data|3-7": [
+            {
+                "position": "1",
+                "order": 0,
+                "isShow": "1",
+                "_id": "@string('lower',24)",
+                "name": "@word(4)",
+                "imageUrl":  "@image('862x440',@color())",
+                "link": "http://mall.kuazhu.com/detail.html?productId=5ea68e9e5dbe7a0023712b03"
+            },
+        ]
+    }))
+})
+
+
+app.get('/products/hot',function(req,res){
+    res.json(Mock.mock({
+        "code": 0,
+        "data|4": [
+            {
+                "order": 0,
+                "isShow": "1",
+                "isHot": "1",
+                "payNums|1-9999": 0,
+                "_id": "@string('lower',24)",
+                "name": "@cword(3, 120)",
+                "mainImage": "@image('200x200',@color())",
+                "price|1-9999": 1
+            }
+        ]
+    }))
+})
+
+
 app.listen('3000',function(){
     console.log('server is running on http://127.0.0.1:3000')
 })

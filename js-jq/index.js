@@ -9,17 +9,22 @@
 
             this.$parentCategories = $('.parent-categories')
             this.$childCategories = $('.child-categories')
-            
+            this.$swiper = $('.swiper')
+            this.$hotProductList = $('.hot .product-list')
+            this.$win = $(w)
             this.cartTimer = null
             this.categoriesTimer = null
+        
+            this.childCategoriesCache = {}
+            
             this.handleCart()
             this.handleSerach()
             
             this.handleCategories()
-            
-
+            this.handleCarousel()
+            this.handlehotProductList()
             /*
-            this.hotProductList = d.querySelector('.hot .product-list')
+            
             this.floorContainer = d.querySelector('.floor .container')
             this.elevator = d.querySelector('#elevator')
             
@@ -33,12 +38,6 @@
             this.floors = null
             
             this.isSearchLayerEmpty = true
-            
-            
-           
-           
-            this.handleCarousel()
-            this.handlehotProductList()
             this.handleFloor()
             this.handleElevator()
             */
@@ -117,99 +116,12 @@
         handleSerach:function(){
 
             $('.search-box').search({
-                searchBtnSelector:'.search-btn',
+                searchBtnSelector:'.btn-search',
                 searchInputSelector:'.search-input',
                 searchLayerSelector:'.search-layer',
                 isAutocomplete:true
             })
-            /*
-            var _this = this
-
-            this.searchBtn.addEventListener('click',function(){
-                _this.submitSearch()
-            },false)
-            //自动提示
-            this.searchInput.addEventListener('input',function(){
-                if(_this.searchTimer){
-                    clearTimeout(_this.searchTimer)
-                }
-                _this.searchTimer = setTimeout(function(){
-                    _this.getSearchData()
-                },300)
-            },false)
-            //点击页面其他地方隐藏搜索提示层
-            d.addEventListener('click',function(){
-                utils.hide(_this.searchLayer)
-            },false)
-            //获取焦点显示搜索提示层
-            this.searchInput.addEventListener('focus', function () {
-                if (!_this.isSearchLayerEmpty){
-                    utils.show(_this.searchLayer)
-                }
-            },false)
-            //阻止输入框冒泡到document上
-            this.searchInput.addEventListener('click',function(ev){
-                ev.stopPropagation()
-            },false)
-            //事件委托处理层的提交
-            this.searchLayer.addEventListener('click',function(ev){
-                var elem = ev.target
-                if(elem.className =elem.innerText){
-                    var keyword = elem.innerText
-                    _this.searchInput.value = keyword
-                    _this.submitSearch()
-                }
-            },false)
-        },
-        submitSearch:function(){
-            var keyword = this.searchInput.value
-            w.location.herf = './list.html?keyword='+keyword
-        },
-        getSearchData:function(){
-            var _this = this
-            var keyword = this.searchInput.value 
-            if(!keyword){
-                this.appendSearchLayerHtml('')
-                return
-            }
-            utils.ajax({
-                url:'/products/search',
-                data:{
-                    keyword:keyword
-                },
-                success:function(data){
-                    if(data.code == 0){
-                        _this.renderSearchLayer(data.data)
-                    }else{
-                        _this.appendSearchLayerHtml('')
-                    }
-                },
-                error:function(status){
-                    _this.appendSearchLayerHtml('')
-                }
-            })
-        },
-        renderSearchLayer:function(list){
-            var len = list.length
-            var html = ''
-            if(len>0){
-                for(var i = 0;i<len;i++){
-                    html += '<li class="search-item">'+list[i].name+'</li>'
-                }
-            }
-            this.appendSearchLayerHtml(html)
-        },
-        appendSearchLayerHtml:function(html){
-            if(html){
-                utils.show(this.searchLayer)
-                this.searchLayer.innerHTML = html
-                this.isSearchLayerEmpty = false
-            }else{
-                utils.hide(this.searchLayer)
-                this.searchLayer.innerHTML = html
-                this.isSearchLayerEmpty = true
-            }
-            */
+          
         },
         handleCategories:function(){
             var _this = this
@@ -217,7 +129,8 @@
 
             //利用事件代理触发
             this.$categories
-            .on('mouseover',function(){
+            .on('mouseover','.parent-categories-item',function(){
+                
                 var $elem = $(this)
                 if(_this.categoriesTimer){
                     clearTimeout(_this.categoriesTimer)
@@ -226,46 +139,21 @@
                 _this.categoriesTimer = setTimeout(function(){
                     _this.$childCategories.show()
                     var pid = $elem.data('id')
-                })
-          
+                    //判断缓存中是否有数据
+                    if(_this.childCategoriesCache[pid]){
+                        _this.renderChildCategories(_this.childCategoriesCache[pid])
+                    }else{
+                        _this.getChildCategoriesData(pid)
+                    }
+                },300)
             })
             .on('mouseleave',function(){
                 if(_this.categoriesTimer){
                     clearTimeout(_this.categoriesTimer)
                 }
-                _this.$childCategories.hide().removeClass('active')
+                _this.$childCategories.hide().html('')
+                _this.$parentCategories.find('.parent-categories-item').removeClass('active')
             })
-            /*
-            this.categories.addEventListener('mouseover',function(ev){
-                    if(_this.categoriesTimer){
-                        clearTimeout(_this.categoriesTimer)
-                    }
-                    _this.categoriesTimer = setTimeout(function(){
-                        var elem = ev.target
-                        if(elem.className == 'parent-categories-item'){
-                            utils.show(_this.childCategories)
-                            var pid = elem.getAttribute('data-id')
-                            var index = elem.getAttribute('data-index')
-                            
-                            _this.parentCategoriesItem[_this.lastActiveIndex].className = 'parent-categories-item'
-                            _this.parentCategoriesItem[index].className = 'parent-categories-item active'
-                            _this.lastActiveIndex = index
-                            _this.getChildCategoriesData(pid)
-                        }
-                     
-                    },100)
-              
-            },false)
-            
-            this.categories.addEventListener('mouseleave',function(){
-                if(_this.categoriesTimer){
-                    clearTimeout(_this.categoriesTimer)
-                }
-                utils.hide(_this.childCategories)
-                _this.childCategories.innerHTML = ''
-                _this.parentCategoriesItem[_this.lastActiveIndex].className = 'parent-categories-item'
-            })
-            */
         },
         
         getParentCategoriesData:function(){
@@ -282,7 +170,7 @@
         },
         getChildCategoriesData:function(pid){
             var _this = this
-            this.$childCategories.html('<div class="loader"></div>')
+            this.$childCategories.html('<div class="loadder"></div>')
             utils.ajax({
                 url:'/categories/childArrayCategories',
                 data:{
@@ -291,6 +179,8 @@
                 success:function(data){
                     if(data.code == 0){
                         _this.renderChildCategories(data.data)
+                        //缓存数据
+                        _this.childCategoriesCache[pid] = data.data
                     }
                 }
             })
@@ -306,7 +196,6 @@
                 html += '</ul>'
                 this.$parentCategories.html(html)
             }
-           this.$parentCategoriesItem = $('.parent-categories-item') 
         },
         renderChildCategories:function(list){
             var len = list.length
@@ -340,26 +229,37 @@
         },
         renderCarousel:function(list){
             var imgs = list.map(function(item){
-                return item.image
+                return item.imageUrl
             })
-            new SlideCarousel({
-                id: 'swiper',
-                imgs: imgs,
+            this.$swiper.carousel({
+                imgs:imgs,
                 width: 862,
                 height: 440,
-                playInterval: 2000
+                playInterval: 0,
+                type:'slide'
             })
         },
         handlehotProductList:function(){
             var _this = this
-            utils.ajax({
-                url:'/products/hot',
-                success:function(data){
-                    if(data.code == 0){
-                        _this.renderHotProductList(data.data)
-                    }
-                } 
+            //防抖函数包装
+            var betterFn = utils.debounce(function(){
+                //判断是否加载过
+                if(_this.$hotProductList.data('isLoaded')){
+                    return
+                }
+                if(utils.isVisibility(_this.$hotProductList)){
+
+                    utils.ajax({
+                        url:'/products/hot',
+                        success:function(data){
+                            if(data.code == 0){
+                                _this.renderHotProductList(data.data)
+                            }
+                        } 
+                    })
+                }
             })
+            this.$win.on('scroll resize load', betterFn)  
         },
         renderHotProductList:function(list){
             var len = list.length
@@ -368,7 +268,7 @@
                 for(var i=0;i<len;i++){
                     html += `<li class="product-item col-1 col-gap">
                                 <a href="#">
-                                    <img src="${list[i].mainImage}" width="180px" height="180px"> 
+                                    <img data-src="${list[i].mainImage}" width="180px" height="180px" src="./images/loading.gif"> 
                                         <p class="product-name">${list[i].name}</p>
                                     <div class="product-price-number">
                                         <span class="product-price">&yen;${list[i].price}</span>
@@ -377,7 +277,17 @@
                                 </a>
                             </li>`
                 }
-                this.hotProductList.innerHTML = html
+                this.$hotProductList.html(html)
+                //保存是否加载的状态
+                this.$hotProductList.data('isLoaded',true)
+                //加载图片
+                this.$hotProductList.find('.product-item img').each(function(){
+                    var $img = $(this)
+                    var imgSrc = $img.data('src')
+                    utils.loadImage(imgSrc,function(){
+                        $img.attr('src', imgSrc)
+                    })
+                })
             }
         },
         handleFloor:function(){
