@@ -27,24 +27,8 @@
             this.$floorContainer = $('.floor .container')
             this.$elevator = $('#elevator')
             this.handleFloor()
-            this.handleFloorImage()
-            /*
-            
-            
-            
-            this.searchTimer = null
-            this.lastActiveIndex = 0
-            this.parentCategoriesItem = null
-            this.categoriesTimer = null
-
-            this.elevatorTimer = null
-            this.elevatorItems = null
-            this.floors = null
-            
-            this.isSearchLayerEmpty = true
-            
             this.handleElevator()
-            */
+        
         },
         loadCartCount:function(){
             var _this = this
@@ -292,48 +276,52 @@
         },
         handleFloor:function(){
             var _this = this
-            this.$floorContainer.betterFn = utils.debounce(function(){
+            _this.$floorContainer.betterFn = utils.debounce(function(){
                 
                 //判断是否在可视区，如果是就发送请求 不是就不发送
                 if(utils.isVisibility(_this.$floorContainer)){
                     utils.ajax({
                         url:'/floors',
                         success:function(data){
-                            _this.renderFloor(data.data)
+                           if(data.code == 0){
+                               _this.renderFloor(data.data)
+                           }
                         }
                     })
                 }
             },300)
             
-            this.$win.on('scroll resize load', this.$floorContainer.betterFn)
+            this.$win.on('scroll resize load', _this.$floorContainer.betterFn)
         },
         renderFloor:function(list){
             var len = list.length
                 var html = ''
                 var elevatorHtml = ''
                 for(var i =0;i<len;i++){
-                    html += `<div class="floor-swap1">
-                                <a href="#" class="hd">
-                                    <h2>F${list[i].num} ${list[i].title}</h2>
-                                </a>
-                            </div>
-                            <div class="floor-product ">
-                                <ul class="prouct-list clearfix">`
+                    html += `<div class="floor-wrap">
+                                <div class="floor-swap1">
+                                            <a href="#" class="hd">
+                                                <h2>F${list[i].num} ${list[i].title}</h2>
+                                            </a>
+                                        </div>
+                                        <div class="floor-product ">
+                                            <ul class="prouct-list clearfix">`
                     for(var j = 0,len1= list[i].products.length;j<len1;j++){
                         var product = list[i].products[j]
-                        html +=     `<li class="product-item col-1 col-gap">
-                                        <a href="#">
-                                            <img data-src="${product.mainImage}" width="180px" height="180px" src="./images/loading.gif"> 
-                                                <p class="product-name">${product.name}</p>
-                                            <div class="product-price-number">
-                                                <span class="product-price">&yen;${product.price}</span>
-                                                <span class="product-number">${product.payNums}人已购买</span>
-                                            </div>
-                                        </a>
-                                    </li>`
+                        html +=                 `<li class="product-item col-1 col-gap">
+                                                    <a href="#">
+                                                        <img  width="180px" height="180px" data-src="${product.mainImage}" src="./images/loading.gif"> 
+                                                            <p class="product-name">${product.name}</p>
+                                                        <div class="product-price-number">
+                                                            <span class="product-price">&yen;${product.price}</span>
+                                                            <span class="product-number">${product.payNums}人已购买</span>
+                                                        </div>
+                                                    </a>
+                                                </li>`
                     }
-                        html += `</ul>
-                            </div>`
+                        html +=         `</ul>
+                                    </div>
+                                </div>`
                         elevatorHtml +=`<a href="javascript:;" class="elevator-item">
                                             <span class="elevator-item-num">F${list[i].num}</span>
                                             <span class="elevator-item-text text-ellipsis" data-num="${i}">${list[i].title}</span>
@@ -346,97 +334,99 @@
                 this.$floorContainer.html(html)
                 //移除事件
                 this.$win.off('scroll resize load', this.$floorContainer.betterFn)
-
-                this.$elevator.html(elevatorHtml)
-
-              
+                this.handleFloorImage()
+                this.$elevator.html(elevatorHtml)    
         },
         handleFloorImage:function(){
             var _this = this
-            var $floors = $('floor-swap1')
-            var betterFn = $floors.each(function(){
-                $floor = $(this)
-                if(utils.isVisibility($floor)){
-                    
-                }
-                _this.$win.on('scroll resize load',betterFn)
+            var $floors = $('.floor .floor-wrap')
+            //已经加载图片的楼层个数
+            var totalLoadedNum = 0
+            //需要加载图片的楼层个数
+            var totalNum = $floors.length
+            var betterFn = utils.debounce(function(){
+                $floors.each(function(){
+                    var $floor = $(this)
+                    //判断是否加载过
+                    if ($floor.data('isLoaded')){
+                        return
+                    }
+
+                    if(utils.isVisibility($floor)){
+                        var $imgs = $floor.find('img')
+                        $imgs.each(function(){
+                            var $img = $(this)
+                            var imgSrc = $img.data('src')
+                            utils.loadImage(imgSrc,function(){
+                                //改变src属性 把请求回来的地址附上去
+                                $img.attr('src',imgSrc)
+                            })
+                        })
+                        $floor.data('isLoaded',true)
+                        totalLoadedNum++
+                        //所有楼层的图片都加载完毕
+                        if(totalLoadedNum == totalNum){
+                            //清除事件
+                            $floors.trigger('loaded')   
+                        }
+                    }
+                })
+            },300)
+            this.$win.on('scroll resize load',betterFn)
+            $floors.on('loaded',function(){
+                _this.$win.off('scroll resize load', betterFn)
             })
         },
-           
         handleElevator:function(){
             var _this = this 
             //点击楼层返回到楼层显示区域
-            this.elevator.addEventListener('click',function(ev){
-                var elem = ev.target
-                if(elem.id == 'backToTop'){
-                    d.documentElement.scrollTop = 0
-                }else if(elem.className == 'elevator-item-text text-ellipsis'){
-                    var num = elem.getAttribute('data-num')
-                    if(!_this.floors){
-                        teturn
-                    }
-                    var floor = _this.floors[num]
-                    d.documentElement.scrollTop = floor.offsetTop
+            this.$elevator.on('click','.elevator-item-text',function(){
+                var $elem = $(this)
+                if($elem.attr('id') == 'backToTop'){
+                    $('html,body').animate({
+                        scrollTop:0
+                    })
+                }else{
+                    $('html,body').animate({
+                        scrollTop:$('.floor-wrap').eq($elem.data('num')).offset().top
+                    })
                 }
-            },false)
-             //楼层进入可视区设置电梯状态
-             var betterSetElevator = function(){
-                 
-                 if(_this.elevatorTimer){
-                     clearTimeout(_this.elevatorTimer)
-                 }
-                 _this.elevatorTimer = setTimeout(function(){
-                    
-                     _this.setElevator()     
-                },200)
-             }
-             w.addEventListener('scroll',betterSetElevator,false)
-             
-             w.addEventListener('resize',betterSetElevator,false)
-             
-             w.addEventListener('load',betterSetElevator,false)
+            })
+             //根据楼层显示电梯
+             var betterSetElevator = utils.debounce(function(){
+                _this.setElevator() 
+             },300)
+             this.$win.on('scroll resize load',betterSetElevator)
         },
         setElevator:function(){
-            if (!this.elevatorItems){
-                return
-            }
-            
             var num = this.getFloorNum()
-            
             if(num == -1){
-                utils.hide(this.elevator)
+                this.$elevator.hide()
             }else{
-                utils.show(this.elevator)
-                for(var i = 0,len = this.elevatorItems.length;i<len;i++){
-                    if (num == i) {
-                        this.elevatorItems[i].className = 'elevator-item elevator-active'
-                    } else {
-                        this.elevatorItems[i].className = 'elevator-item'
-                    }
-                }
+                this.$elevator
+                .show()
+                .find('.elevator-item')//这里是选择器
+                .removeClass('elevator-active')
+                .eq(num).addClass('elevator-active')
             }
-
         },
+
+        //获取楼层号
         getFloorNum:function(){
-            
+            var _this = this
+            //设置的默认楼层号
             var num = -1
-           
-            if(!this.floors){
-                return num
-            }
-            for(var i=0,len = this.floors.length;i<len;i++){
-                var floor = this.floors[i]
-                
-                num = i
-                if(floor.offsetTop > d.documentElement.scrollTop + d.documentElement.clientHeight / 2){
-                    num = i - 1
-                    break
+            $('.floor .floor-wrap').each(function(index){
+                num = index
+                var $floor = $(this)
+                if($floor.offset().top > _this.$win.scrollTop() + _this.$win.height() / 2){
+                    num = index - 1
+                    return false
                 }
-            }
+            })
             return num
         }
     }
-    
     
     page.init()    
 })(window,document);
