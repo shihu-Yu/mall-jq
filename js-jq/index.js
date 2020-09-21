@@ -23,10 +23,14 @@
             this.handleCategories()
             this.handleCarousel()
             this.handlehotProductList()
+
+            this.$floorContainer = $('.floor .container')
+            this.$elevator = $('#elevator')
+            this.handleFloor()
+            this.handleFloorImage()
             /*
             
-            this.floorContainer = d.querySelector('.floor .container')
-            this.elevator = d.querySelector('#elevator')
+            
             
             this.searchTimer = null
             this.lastActiveIndex = 0
@@ -38,7 +42,7 @@
             this.floors = null
             
             this.isSearchLayerEmpty = true
-            this.handleFloor()
+            
             this.handleElevator()
             */
         },
@@ -242,13 +246,9 @@
         handlehotProductList:function(){
             var _this = this
             //防抖函数包装
-            var betterFn = utils.debounce(function(){
-                //判断是否加载过
-                if(_this.$hotProductList.data('isLoaded')){
-                    return
-                }
+            this.$hotProductList.betterFn = utils.debounce(function(){
+                
                 if(utils.isVisibility(_this.$hotProductList)){
-
                     utils.ajax({
                         url:'/products/hot',
                         success:function(data){
@@ -258,8 +258,8 @@
                         } 
                     })
                 }
-            })
-            this.$win.on('scroll resize load', betterFn)  
+            },300)
+            this.$win.on('scroll resize load',this.$hotProductList.betterFn)  
         },
         renderHotProductList:function(list){
             var len = list.length
@@ -278,9 +278,9 @@
                             </li>`
                 }
                 this.$hotProductList.html(html)
-                //保存是否加载的状态
-                this.$hotProductList.data('isLoaded',true)
-                //加载图片
+                //移除事件
+                this.$win.off('scroll resize load',this.$hotProductList.betterFn)
+                //获取图片地址 加载图片
                 this.$hotProductList.find('.product-item img').each(function(){
                     var $img = $(this)
                     var imgSrc = $img.data('src')
@@ -292,12 +292,20 @@
         },
         handleFloor:function(){
             var _this = this
-            utils.ajax({
-                url:'/floors',
-                success:function(data){
-                    _this.renderFloor(data.data)
+            this.$floorContainer.betterFn = utils.debounce(function(){
+                
+                //判断是否在可视区，如果是就发送请求 不是就不发送
+                if(utils.isVisibility(_this.$floorContainer)){
+                    utils.ajax({
+                        url:'/floors',
+                        success:function(data){
+                            _this.renderFloor(data.data)
+                        }
+                    })
                 }
-            })
+            },300)
+            
+            this.$win.on('scroll resize load', this.$floorContainer.betterFn)
         },
         renderFloor:function(list){
             var len = list.length
@@ -315,7 +323,7 @@
                         var product = list[i].products[j]
                         html +=     `<li class="product-item col-1 col-gap">
                                         <a href="#">
-                                            <img src="${product.mainImage}" width="180px" height="180px"> 
+                                            <img data-src="${product.mainImage}" width="180px" height="180px" src="./images/loading.gif"> 
                                                 <p class="product-name">${product.name}</p>
                                             <div class="product-price-number">
                                                 <span class="product-price">&yen;${product.price}</span>
@@ -335,13 +343,26 @@
                                      <span class="elevator-item-num"><i class="iconfont icon-arrow-up"></i></span>
                                      <span class="elevator-item-text text-ellipsis" id="backToTop">顶部</span>
                                  </a>`
-                this.floorContainer.innerHTML = html
-                this.elevator.innerHTML = elevatorHtml
-                this.floors = d.querySelectorAll('.floor-swap1')
-                console.log(this.floors)
-                this.elevatorItems = d.querySelectorAll('.elevator-item')
-                
+                this.$floorContainer.html(html)
+                //移除事件
+                this.$win.off('scroll resize load', this.$floorContainer.betterFn)
+
+                this.$elevator.html(elevatorHtml)
+
+              
         },
+        handleFloorImage:function(){
+            var _this = this
+            var $floors = $('floor-swap1')
+            var betterFn = $floors.each(function(){
+                $floor = $(this)
+                if(utils.isVisibility($floor)){
+                    
+                }
+                _this.$win.on('scroll resize load',betterFn)
+            })
+        },
+           
         handleElevator:function(){
             var _this = this 
             //点击楼层返回到楼层显示区域

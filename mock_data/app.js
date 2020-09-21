@@ -126,6 +126,34 @@ app.get('/products/hot',function(req,res){
     }))
 })
 
+app.get('/floors',function(req,res){
+    res.json(Mock.mock({
+        "code": 0,
+        "data|4": [
+            {
+                "title": "@cword(4)",
+                "id": "@string('lower',24)",
+                "products|10": [
+                    {
+                        "status": "1",
+                        "order": 0,
+                        "isShow": "1",
+                        "isHot": "1",
+                        "payNums|1-9999": 0,
+                        "_id": "@string('lower',24)",
+                        "name": "@cword(3, 120)",
+                        "mainImage": "@image('200x200',@color())",
+                        "price|1-9999": 1,
+                        "stock|1-9999": 1,
+                    }
+                ],
+                "order": 0,
+                "num|+1": 1
+            }
+        ]
+    }))
+})
+
 
 app.listen('3000',function(){
     console.log('server is running on http://127.0.0.1:3000')
